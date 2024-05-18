@@ -1,11 +1,12 @@
 const express = require("express"); // Import the Express framework
 const router = express.Router(); // Create an instance of Express Router
-const { register, sendOTP, login, logout, OTPForget } = require("../controllers/authentication"); // Import userAuth from authService
+const { register, sendOTP, login, logout, OTPForget, changePassword } = require("../controllers/authentication"); // Import userAuth from authService
 const {
   validateUserData,
   validateOTPRequest,
   validateLoginData,
   authenticate,
+  validateUpdatePasswordData
 } = require("../middleware/userAuthenticationMiddleware"); // Import validateUserData middleware from userMiddleware
 
 const {getData} = require('../controllers/Products')
@@ -22,6 +23,10 @@ router.post("/send_otp", validateOTPRequest, sendOTP);
 // Define a Post route /otp - The route is responsible sending OTP throw Email if user is registered
 // It utilizes validateOTPRequest middleware and OTPForget controller
 router.post("/otp", validateOTPRequest, OTPForget);
+
+// Define a PATCH route /password - The route responsible updating user password
+// I utilizes validateUpdatePasswordData middleware for request body validation and changePassword controller 
+router.patch("/password", validateUpdatePasswordData, changePassword);
 
 
 // Define a POST route '/login' - The route handles user login
