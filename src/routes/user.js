@@ -1,6 +1,6 @@
 const express = require("express"); // Import the Express framework
 const router = express.Router(); // Create an instance of Express Router
-const { register, sendOTP, login, logout } = require("../controllers/authentication"); // Import userAuth from authService
+const { register, sendOTP, login, logout, OTPForget } = require("../controllers/authentication"); // Import userAuth from authService
 const {
   validateUserData,
   validateOTPRequest,
@@ -14,9 +14,15 @@ const {getData} = require('../controllers/Products')
 // It utilizes validateUserData middleware and userAuth.createUser controller
 router.post("/register", validateUserData, register);
 
-// Define a POST route '/send_otp' - The route is responsible sending OTP throw email
+// Define a POST route '/send_otp' - The route is responsible sending OTP throw email if user is not registered
 // It utilizes validateOTPRequest middleware and sendOTP controller
 router.post("/send_otp", validateOTPRequest, sendOTP);
+
+
+// Define a Post route /otp - The route is responsible sending OTP throw Email if user is registered
+// It utilizes validateOTPRequest middleware and OTPForget controller
+router.post("/otp", validateOTPRequest, OTPForget);
+
 
 // Define a POST route '/login' - The route handles user login
 // It utilizes validateLoginData middleware and userAuth.login controller

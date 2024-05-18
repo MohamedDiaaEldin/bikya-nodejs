@@ -1,6 +1,6 @@
 const {
   sendBadRequestResponse,
-  sendUnAuthorized,
+  sendUnAuthorized
 } = require("../utils/responseHandler"); // Importing response handling functions
 const { isValidToken } = require("../utils/jwtUtil"); // Importing token validation function
 
@@ -16,9 +16,8 @@ module.exports.validateOTPRequest = (req, res, next) => {
 };
 
 // Middleware to validate user data for sign-up
-module.exports.validateUserData = (req, res, next) => {
-  const { name, email, mobile, password, otp } = req.body;
-  console.log(req.body)
+module.exports.validateUserData = (req, res, next) => {  
+  const { name, mobile, password, email,  otp } = req.body;
   if (    
     !name ||
     !email ||

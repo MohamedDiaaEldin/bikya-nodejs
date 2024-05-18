@@ -16,7 +16,7 @@ const cookieParser = require('cookie-parser');
 const app = express()
 // Allow requests from localhost
 app.use(cors({
-    origin: 'http://localhost:3000', // Update with your frontend URL
+    origin: 'http://localhost:3000',
     credentials: true
 }));
 

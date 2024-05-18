@@ -22,6 +22,7 @@ const {
 // Expect{ Email, password}
 // Endpoint for user login
 module.exports.login = async (req, res) => {
+  
   try{    
     const { email, password } = req.body; // Extract email and password from request body
   
@@ -59,9 +60,50 @@ module.exports.login = async (req, res) => {
   }
 };
 
-// Expect{ Email}
-module.exports.sendOTP = async (req, res) => {
+
+// Expect {Email}
+// for Forget Password 
+module.exports.OTPForget = async(req, res) => { 
+
+  // Endpoint to send OTP to a given email if email is found 
+  let transaction = null
+  try {
+
+    transaction = await sequelize.transaction();
+    const { email } = req.body; // Extract email from request body    
+    const user = await User.findOne({
+     where: {
+       email: email,
+     },
+     attributes: ["email"],
+   });
+   if (!user) {
+     // If user not exists, send 200 - for security
+     return sendSuccessResponse(res);
+   } 
+    // Generate secret and OTP, save to the database, and send OTP email
+    const secret = generateSecret();
+    const generatedOTP = generateTOTP(secret);
+    sendOTPMail(email, generatedOTP);
+    await createUserOTP(email, secret, transaction);
+    await transaction.commit();
+    return sendSuccessResponse(res); // Message : Success
   
+} catch (error) {
+   if (transaction){
+     await transaction.rollback();
+   }
+   console.log(
+     "Error while sending email or interacting with database Error:",
+     error
+   );
+   return sendErrorResponse(res, 500); // Message : Server Error
+ }
+} 
+
+// Expect{ Email}
+// For Register 
+module.exports.sendOTP = async (req, res) => {
   // Endpoint to send OTP to a given email
   let transaction = null
   try {
@@ -100,7 +142,12 @@ module.exports.sendOTP = async (req, res) => {
 // Endpoint for user registration (sign-up)
 // Expect{ Email, password , otp, mobile , name}
 module.exports.register = async (req, res) => {
+  
+  
+
+  
   let transaction = null ;
+
   const { email, password, otp, mobile, name } = req.body; // Extract data from request body
   try {
     transaction =  await sequelize.transaction(); // Await the transaction creation
