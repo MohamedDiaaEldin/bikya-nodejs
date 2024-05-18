@@ -31,6 +31,20 @@ module.exports.validateUserData = (req, res, next) => {
   next();
 };
 
+// Middleware to validate user password and otp for UPDATE password
+module.exports.validateUpdatePasswordData = (req, res, next) => {  
+  const {  password, email,  otp } = req.body;
+  if (        
+    !email ||
+    !password ||
+    !otp
+  ) {
+    // If any of the required fields are missing, send a Bad Request response
+    return sendBadRequestResponse(res);
+  }
+  next();
+};
+
 // Middleware to validate login data
 module.exports.validateLoginData = (req, res, next) => {
   const { email, password } = req.body;
