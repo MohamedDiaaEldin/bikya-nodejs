@@ -12,6 +12,7 @@ const {
   sendConflictResponse,
   sendSuccessResponse,
   sendBadRequestResponse,
+  sendNotFoundResponse
 } = require("../utils/responseHandler");
 const {
   isValidOTP,
@@ -144,8 +145,6 @@ module.exports.sendOTP = async (req, res) => {
 module.exports.register = async (req, res) => {
   
   
-
-  
   let transaction = null ;
 
   const { email, password, otp, mobile, name } = req.body; // Extract data from request body
@@ -177,7 +176,7 @@ module.exports.register = async (req, res) => {
     }
     // Update user secret and save changes
     userOtp.OtpSecret = "";
-    userOtp.save();
+    await userOtp.save({transaction});
 
     // Create user using createUser function from user model within the transaction
     await createUser(name, email, hashedPassword, mobile, transaction);
@@ -200,3 +199,72 @@ module.exports.logout = (req, res)=> {
   res.cookie('access_token', '')
   sendSuccessResponse(res)
 }
+
+
+module.exports.changePassword = async(req, res) => { 
+
+  // Endpoint to send OTP to a given email if email is found 
+  let transaction = null
+  try {
+
+    // Creates New transaction
+    transaction = await sequelize.transaction();
+    const { email, otp, password } = req.body; // Extract email , password and OTP from request body    
+    // selects user with email from the database
+    const user = await User.findOne({
+     where: {
+       email: email,
+     },
+     attributes: ["password"],
+   });
+   // selects user OTP with email from the database
+   const userOTP = await UserSecret.findOne({
+    where: {
+      email:email
+    }, 
+    attributes: ["OtpSecret", 'email']
+   })
+   
+   // if user or userOTP not found in the database,  return a 404 Not Found Response 
+   if (!user || !userOTP ) {
+     // If user not exists, send 404
+     return sendNotFoundResponse(res);
+   } 
+
+   // if user's OTP is invalid, return a 401 UnAuthorized Response 
+   if (! isValidOTP(userOTP.OtpSecret, otp)){ 
+    return sendUnAuthorized(res)
+   }
+
+   // set user's OTP secret to empty
+   userOTP.OtpSecret = ''   
+   // Save userOTP within the transaction
+    await userOTP.save({transaction})
+    
+    // Hash New Password
+    const hashedPassword = await hashPassword(password)
+
+
+    // save new hashed password within the transaction
+    user.password = hashedPassword 
+    user.save({transaction})
+
+    
+    // Commit Changes within the transaction into the database 
+    // update user's otp secret and new password 
+    await transaction.commit();
+
+    //TODO send async email with new password update
+    return sendSuccessResponse(res); // Message : Success
+  
+} catch (error) {
+   if (transaction){
+     await transaction.rollback();
+   }
+   console.log(
+     "Error while sending email or interacting with database Error:",
+     error
+   );
+   return sendErrorResponse(res, 500); // Message : Server Error
+ }
+} 
