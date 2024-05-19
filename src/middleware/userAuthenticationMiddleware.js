@@ -4,7 +4,7 @@ const {
 } = require("../utils/responseHandler"); // Importing response handling functions
 const { isValidToken } = require("../utils/jwtUtil"); // Importing token validation function
 
-// Middleware to validate the request for OTP validation endpoint
+// Middleware to validate the request for OTP validation endpoint - forgot password
 // Expects 'email' request body
 module.exports.validateOTPRequest = (req, res, next) => {
   const { email } = req.body;  

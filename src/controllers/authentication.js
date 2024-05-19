@@ -62,45 +62,7 @@ module.exports.login = async (req, res) => {
 };
 
 
-// Expect {Email}
-// for Forget Password 
-module.exports.OTPForget = async(req, res) => { 
 
-  // Endpoint to send OTP to a given email if email is found 
-  let transaction = null
-  try {
-
-    transaction = await sequelize.transaction();
-    const { email } = req.body; // Extract email from request body    
-    const user = await User.findOne({
-     where: {
-       email: email,
-     },
-     attributes: ["email"],
-   });
-   if (!user) {
-     // If user not exists, send 200 - for security
-     return sendSuccessResponse(res);
-   } 
-    // Generate secret and OTP, save to the database, and send OTP email
-    const secret = generateSecret();
-    const generatedOTP = generateTOTP(secret);
-    sendOTPMail(email, generatedOTP);
-    await createUserOTP(email, secret, transaction);
-    await transaction.commit();
-    return sendSuccessResponse(res); // Message : Success
-  
-} catch (error) {
-   if (transaction){
-     await transaction.rollback();
-   }
-   console.log(
-     "Error while sending email or interacting with database Error:",
-     error
-   );
-   return sendErrorResponse(res, 500); // Message : Server Error
- }
-} 
 
 // Expect{ Email}
 // For Register 
@@ -200,6 +162,45 @@ module.exports.logout = (req, res)=> {
   sendSuccessResponse(res)
 }
 
+// Expect {Email}
+// for Forget Password 
+module.exports.OTPForget = async(req, res) => { 
+
+  // Endpoint to send OTP to a given email if email is found 
+  let transaction = null
+  try {
+
+    transaction = await sequelize.transaction();
+    const { email } = req.body; // Extract email from request body    
+    const user = await User.findOne({
+     where: {
+       email: email,
+     },
+     attributes: ["email"],
+   });
+   if (!user) {
+     // If user not exists, send 200 - for security
+     return sendSuccessResponse(res);
+   } 
+    // Generate secret and OTP, save to the database, and send OTP email
+    const secret = generateSecret();
+    const generatedOTP = generateTOTP(secret);
+    sendOTPMail(email, generatedOTP);
+    await createUserOTP(email, secret, transaction);
+    await transaction.commit();
+    return sendSuccessResponse(res); // Message : Success
+  
+} catch (error) {
+   if (transaction){
+     await transaction.rollback();
+   }
+   console.log(
+     "Error while sending email or interacting with database Error:",
+     error
+   );
+   return sendErrorResponse(res, 500); // Message : Server Error
+ }
+} 
 
 module.exports.changePassword = async(req, res) => { 
 
@@ -267,3 +268,5 @@ module.exports.changePassword = async(req, res) => {
    return sendErrorResponse(res, 500); // send a 500 server error 
  }
 } 
+
+
