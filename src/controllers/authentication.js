@@ -3,7 +3,7 @@ const { sequelize } = require("../database-config");
 const { createUser } = require("../models/user"); // Import createUser function from user model
 const { hashPassword, isValidPassword } = require("../utils/passwordUtils"); // Import hashPassword function from passwordUtils
 const { createUserOTP, UserSecret } = require("../models/userOTP");
-const { sendOTPMail } = require("../services/emailService");
+const { sendOTPMail, sendPasswordChangeConfirmationEmail } = require("../services/emailService");
 const { User } = require("../models/user");
 const { sign } = require("../utils/jwtUtil");
 const {
@@ -215,15 +215,12 @@ module.exports.changePassword = async(req, res) => {
      where: {
        email: email,
      },
-     attributes: ["password"],
+     attributes: ["id", "password", "name", 'email'],
    });
+    
+   
    // selects user OTP with email from the database
-   const userOTP = await UserSecret.findOne({
-    where: {
-      email:email
-    }, 
-    attributes: ["OtpSecret", 'email']
-   })
+   const userOTP = await UserSecret.findByPk(email)
    
    // if user or userOTP not found in the database,  return a 404 Not Found Response 
    if (!user || !userOTP ) {
@@ -231,7 +228,7 @@ module.exports.changePassword = async(req, res) => {
      return sendNotFoundResponse(res);
    } 
 
-   // if user's OTP is invalid, return a 401 UnAuthorized Response 
+  //  if user's OTP is invalid, return a 401 UnAuthorized Response 
    if (! isValidOTP(userOTP.OtpSecret, otp)){ 
     return sendUnAuthorized(res)
    }
@@ -247,15 +244,17 @@ module.exports.changePassword = async(req, res) => {
 
     // save new hashed password within the transaction
     user.password = hashedPassword 
-    user.save({transaction})
+    await user.save({transaction})
 
     
     // Commit Changes within the transaction into the database 
     // update user's otp secret and new password 
     await transaction.commit();
+    
+    // Async Send Password Change Confirmation Email     
+    sendPasswordChangeConfirmationEmail(user.email , user.name)
 
-    //TODO send async email with new password update
-    return sendSuccessResponse(res); // Message : Success
+    return sendSuccessResponse(res); // send a 200 success response 
   
 } catch (error) {
    if (transaction){
@@ -265,6 +264,6 @@ module.exports.changePassword = async(req, res) => {
      "Error while sending email or interacting with database Error:",
      error
    );
-   return sendErrorResponse(res, 500); // Message : Server Error
+   return sendErrorResponse(res, 500); // send a 500 server error 
  }
 } 
